@@ -12,7 +12,7 @@ mitochondrial genome analysis of *Haemaphysalis* ticks.
 
 ### Command-line Workflow
 
-Tools used include `Porechop`, `minimap2`, `samtools`, `bcftools`, and `bedtools`.
+Tools used include `Porechop`, `Filtlong`, `minimap2`, `samtools`, `bcftools`, and `bedtools`.
 
 ### Phylogenetic Analysis
 
