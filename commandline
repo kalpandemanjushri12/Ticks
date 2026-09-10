@@ -13,7 +13,6 @@ REFERENCE="your_reference.fasta"
 
 porechop -i "$RAW_FASTQ" -o trimmed.fastq --threads $THREADS
 
-
 # ------------------------------------------------------------------------------
 # Step 2: Read quality filtering
 # Filter the trimmed Oxford Nanopore reads using Filtlong.
@@ -23,7 +22,6 @@ porechop -i "$RAW_FASTQ" -o trimmed.fastq --threads $THREADS
 
 filtlong --min_length 1000 --keep_percent 90 trimmed.fastq > filtered.fastq
 
-
 # ------------------------------------------------------------------------------
 # Step 3: Alignment to reference
 # Align the filtered reads to the reference mitochondrial genome using minimap2.
@@ -32,7 +30,6 @@ filtlong --min_length 1000 --keep_percent 90 trimmed.fastq > filtered.fastq
 
 minimap2 -ax map-ont "$REFERENCE" filtered.fastq > aln.sam
 
-
 # ------------------------------------------------------------------------------
 # Convert SAM to sorted BAM and index the alignment
 # ------------------------------------------------------------------------------
@@ -40,7 +37,6 @@ minimap2 -ax map-ont "$REFERENCE" filtered.fastq > aln.sam
 samtools view -Sb aln.sam | samtools sort -o aln.sorted.bam
 
 samtools index aln.sorted.bam
-
 
 # ------------------------------------------------------------------------------
 # Step 4: Variant calling
@@ -53,7 +49,6 @@ bcftools call -mv --ploidy 1 -Oz -o calls.vcf.gz
 
 bcftools index calls.vcf.gz
 
-
 # ------------------------------------------------------------------------------
 # Step 5: Consensus sequence generation
 # Generate a consensus mitochondrial genome using the reference sequence
@@ -62,7 +57,6 @@ bcftools index calls.vcf.gz
 
 bcftools consensus --haplotype A calls.vcf.gz > consensus.fasta
 
-
 # ------------------------------------------------------------------------------
 # Step 6: Coverage assessment
 # Calculate read coverage across the reference mitochondrial genome.
@@ -70,13 +64,11 @@ bcftools consensus --haplotype A calls.vcf.gz > consensus.fasta
 
 bedtools genomecov -ibam aln.sorted.bam -bga > coverage.bed
 
-
 # ------------------------------------------------------------------------------
 # Identify regions with zero coverage
 # ------------------------------------------------------------------------------
 
 awk '$4 == 0' coverage.bed > zero_cov.bed
-
 
 # ------------------------------------------------------------------------------
 # Step 7: Mask low/no-coverage regions
@@ -86,8 +78,7 @@ awk '$4 == 0' coverage.bed > zero_cov.bed
 bedtools maskfasta \
     -fi consensus.fasta \
     -bed zero_cov.bed \
-    -fo final_consensus_with_Ns.fasta
-
+    -fo final_consensus_with_Ns.fasta\
 
 # ------------------------------------------------------------------------------
 # Final output:
