@@ -1,0 +1,95 @@
+# ==============================================================================
+# Reference-Based Mitochondrial Genome Assembly
+# ==============================================================================
+
+# Define input files and number of threads
+RAW_FASTQ="your_raw_reads.fastq"
+REFERENCE="your_reference.fasta"
+
+# ------------------------------------------------------------------------------
+# Step 1: Adapter trimming
+# Remove sequencing adapters from Oxford Nanopore reads using Porechop.
+# ------------------------------------------------------------------------------
+
+porechop -i "$RAW_FASTQ" -o trimmed.fastq --threads $THREADS
+
+
+# ------------------------------------------------------------------------------
+# Step 2: Read quality filtering
+# Filter the trimmed Oxford Nanopore reads using Filtlong.
+# Reads shorter than 1000 bp are removed and the highest-quality 90% of reads
+# are retained.
+# ------------------------------------------------------------------------------
+
+filtlong --min_length 1000 --keep_percent 90 trimmed.fastq > filtered.fastq
+
+
+# ------------------------------------------------------------------------------
+# Step 3: Alignment to reference
+# Align the filtered reads to the reference mitochondrial genome using minimap2.
+# The map-ont preset is used for Oxford Nanopore reads.
+# ------------------------------------------------------------------------------
+
+minimap2 -ax map-ont "$REFERENCE" filtered.fastq > aln.sam
+
+
+# ------------------------------------------------------------------------------
+# Convert SAM to sorted BAM and index the alignment
+# ------------------------------------------------------------------------------
+
+samtools view -Sb aln.sam | samtools sort -o aln.sorted.bam
+
+samtools index aln.sorted.bam
+
+
+# ------------------------------------------------------------------------------
+# Step 4: Variant calling
+# Identify variants from the aligned reads using bcftools.
+# --ploidy 1 is used for the mitochondrial genome.
+# ------------------------------------------------------------------------------
+
+bcftools mpileup -f "$REFERENCE" aln.sorted.bam | \
+bcftools call -mv --ploidy 1 -Oz -o calls.vcf.gz
+
+bcftools index calls.vcf.gz
+
+
+# ------------------------------------------------------------------------------
+# Step 5: Consensus sequence generation
+# Generate a consensus mitochondrial genome using the reference sequence
+# and the identified variants.
+# ------------------------------------------------------------------------------
+
+bcftools consensus --haplotype A calls.vcf.gz > consensus.fasta
+
+
+# ------------------------------------------------------------------------------
+# Step 6: Coverage assessment
+# Calculate read coverage across the reference mitochondrial genome.
+# ------------------------------------------------------------------------------
+
+bedtools genomecov -ibam aln.sorted.bam -bga > coverage.bed
+
+
+# ------------------------------------------------------------------------------
+# Identify regions with zero coverage
+# ------------------------------------------------------------------------------
+
+awk '$4 == 0' coverage.bed > zero_cov.bed
+
+
+# ------------------------------------------------------------------------------
+# Step 7: Mask low/no-coverage regions
+# Replace regions with zero read coverage by Ns in the consensus sequence.
+# ------------------------------------------------------------------------------
+
+bedtools maskfasta \
+    -fi consensus.fasta \
+    -bed zero_cov.bed \
+    -fo final_consensus_with_Ns.fasta
+
+
+# ------------------------------------------------------------------------------
+# Final output:
+# final_consensus_with_Ns.fasta
+# ------------------------------------------------------------------------------
