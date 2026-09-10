@@ -1,6 +1,6 @@
 # Tick Mitochondrial Genome Analysis
 
-This folder contains the command-line workflows and R scripts used for
+This repository contains the command-line workflows and R scripts used for
 mitochondrial genome analysis of *Haemaphysalis* ticks.
 
 ### Contents
