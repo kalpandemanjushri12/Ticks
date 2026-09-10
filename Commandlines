@@ -1,0 +1,83 @@
+# Input files and parameters
+# ------------------------------------------------------------------------------
+
+RAW_FASTQ="your_raw_reads.fastq"
+REFERENCE="your_reference.fasta"
+
+# ------------------------------------------------------------------------------
+# Step 1: Adapter trimming
+# ------------------------------------------------------------------------------
+
+echo "Trimming adapters..."
+
+porechop \
+    -i "$RAW_FASTQ" \
+    -o trimmed.fastq \
+    --threads $THREADS
+
+# ------------------------------------------------------------------------------
+# Step 2: Align reads to reference
+# ------------------------------------------------------------------------------
+
+echo "Aligning reads to reference..."
+
+minimap2 \
+    -ax map-ont \
+    "$REFERENCE" \
+    trimmed.fastq \
+    > aln.sam
+
+# Convert SAM to BAM, sort, and index
+samtools view -Sb aln.sam | \
+    samtools sort -o aln.sorted.bam
+
+samtools index aln.sorted.bam
+
+# ------------------------------------------------------------------------------
+# Step 3: Variant calling
+# ------------------------------------------------------------------------------
+
+echo "Calling variants..."
+
+bcftools mpileup \
+    -f "$REFERENCE" \
+    aln.sorted.bam | \
+    bcftools call \
+    -mv \
+    --ploidy 1 \
+    -Oz \
+    -o calls.vcf.gz
+
+bcftools index calls.vcf.gz
+
+# ------------------------------------------------------------------------------
+# Step 4: Consensus sequence generation
+# ------------------------------------------------------------------------------
+
+echo "Creating consensus sequence..."
+
+bcftools consensus \
+    --haplotype A \
+    calls.vcf.gz \
+    > consensus.fasta
+
+# ------------------------------------------------------------------------------
+# Step 5: Mask low/no-coverage regions
+# ------------------------------------------------------------------------------
+
+echo "Masking low/no-coverage regions with Ns..."
+
+# Calculate coverage across the reference
+bedtools genomecov \
+    -ibam aln.sorted.bam \
+    -bga \
+    > coverage.bed
+
+# Identify regions with zero coverage
+awk '$4 == 0' coverage.bed > zero_cov.bed
+
+# Replace zero-coverage regions with Ns
+bedtools maskfasta \
+    -fi consensus.fasta \
+    -bed zero_cov.bed \
+    -fo final_consensus_with_Ns.fasta
