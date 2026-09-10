@@ -1,16 +1,25 @@
-# Haemaphysalis Phylogenetic Analysis
+# Tick Mitochondrial Genome Analysis
 
-R script for visualization and comparative phylogenetic analysis of *Haemaphysalis* mitochondrial genomes.
+This folder contains the command-line workflows and R scripts used for
+mitochondrial genome analysis of *Haemaphysalis* ticks.
 
-### Input
+### Contents
 
-* Newick-format phylogenetic tree
-* Excel metadata file containing `Accession`, `Species`, and `Genus`
+* **Command-line workflow** for reference-based mitochondrial genome assembly,
+  consensus generation, and low/no-coverage masking from Oxford Nanopore reads.
+* **R scripts** for phylogenetic analysis, tree visualization, and comparative
+  analysis of mitochondrial genomes.
+
+### Command-line Workflow
+
+Tools used include `Porechop`, `minimap2`, `samtools`, `bcftools`, and `bedtools`.
+
+### Phylogenetic Analysis
+
+R scripts require a Newick-format phylogenetic tree and an Excel metadata file
+containing `Accession`, `Species`, and `Genus`.
 
 ### Output
 
-Publication-quality phylogenetic trees in **PDF, SVG, and PNG** formats.
-
-### Requirements
-
-R packages: `ape`, `ggtree`, `ggplot2`, `dplyr`, `readxl`, `phytools`, `svglite`, and `grid`.
+The workflows generate final mitochondrial genome sequences and
+publication-quality phylogenetic trees in **PDF, SVG, and PNG** formats.
